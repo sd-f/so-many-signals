@@ -1,8 +1,10 @@
+import signal
+
 from pandas import read_csv
 import matplotlib.pyplot as plt
-# from tsmoothie.smoother import *
-# from scipy.signal import savgol_filter
-# from scipy import signal
+from tsmoothie.smoother import *
+from scipy.signal import savgol_filter
+from scipy import signal
 import statsmodels.api as sm
 
 
@@ -13,42 +15,66 @@ def main():
                       index_col=0,
                       parse_dates=True, sep="\t")
 
-    # window_size = 50
-    # original = series['Mean F1']
+
 
     # simple rolling mean
     # https://www.statology.org/rolling-mean-pandas/
-    # series['rolling_mean'] = original.rolling(window=500).mean()
-    # series['rolling_mean_2'] = series['rolling_mean'].rolling(window=20).mean()
+
+    s1 = series.copy()
+    s1['rolling_mean'] = s1['Mean F1'].rolling(window=30).mean()
+    s1.plot(title="rolling mean", linewidth=1)
+    plt.savefig("plots/s1.png")
+
+    # twice rolling mean
+
+    s2 = series.copy()
+    s2['rolling_mean_2'] = s2['Mean F1'].rolling(window=500).mean().rolling(window=20).mean()
+    s2.plot(title="rolling mean (2x)", linewidth=1)
+    plt.savefig("plots/s2.png")
 
     # savgol filter
     # https://www.datatechnotes.com/2022/05/smoothing-example-with-savitzky-golay.html
     # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html
-    # series['savgol_filter'] = savgol_filter(original, window_length=window_size, polyorder=2)
+
+    s3 = series.copy()
+    s3['savgol_filter_25'] = savgol_filter(s3['Mean F1'], window_length=25, polyorder=2)
+    s3.plot(title="savitzky golay", linewidth=1)
+    plt.savefig("plots/s3.png")
 
     # convolution smoother
     # https://pypi.org/project/tsmoothie/
-    # smoother = ConvolutionSmoother(window_len=window_size, window_type='ones')
-    # series['tsmoothie'] = smoother.smooth(original).smooth_data[0]
+
+    s4 = series.copy()
+    smoother = ConvolutionSmoother(window_len=25, window_type='ones')
+    s4['tsmoothie'] = smoother.smooth(s4['Mean F1']).smooth_data[0]
+    s4.plot(title="convolution smoother", linewidth=1)
+    plt.savefig("plots/s4.png")
 
     #  Notch filter (remove by frequency)
     # https://www.geeksforgeeks.org/design-an-iir-notch-filter-to-denoise-signal-using-python/
-    # samp_freq = 5  # Sample frequency (Hz)
-    # notch_freq = 0.02  # Frequency to be removed from signal (Hz)
-    # quality_factor = 20.0  # Quality factor
 
-    # b_notch, a_notch = signal.iirnotch(notch_freq, quality_factor, samp_freq)
-    # series['notch_filter'] = signal.filtfilt(b_notch, a_notch, original)
+    s5 = series.copy()
+    samp_freq = 5  # Sample frequency (Hz)
+    notch_freq = 0.02  # Frequency to be removed from signal (Hz)
+    quality_factor = 20.0  # Quality factor
+
+    b_notch, a_notch = signal.iirnotch(notch_freq, quality_factor, samp_freq)
+    s5['notch_filter'] = signal.filtfilt(b_notch, a_notch, s5['Mean F1'])
+
+    s5.plot(title="notch filter", linewidth=1)
+    plt.savefig("plots/s5.png")
 
     # lowess filter
     # https://towardsdatascience.com/lowess-regression-in-python-how-to-discover-clear-patterns-in-your-data-f26e523d7a35
     # https://www.statsmodels.org/dev/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html
-    a = sm.nonparametric.lowess(series['Mean F1'], series.index, frac=0.3)
-    series['lowess'] = a[:, 1]
-    print(series.head())
 
-    series.plot(linewidth=1)
-    plt.show()
+    s6 = series.copy()
+    a = sm.nonparametric.lowess(s6['Mean F1'], s6.index, frac=0.3)
+    s6['lowess'] = a[:, 1]
+    s6.plot(title="lowess filter", linewidth=1)
+    plt.savefig("plots/s6.png")
+
+    # plt.show()
     plt.close()
     pass
 
